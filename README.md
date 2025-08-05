@@ -5,3 +5,4 @@ V tomto kurzu se naučíte, jak vytvářet jednoduché aplikace využívající 
 
 * [Kapitola 1 - Nastavení prostředí a první zavolání OpenAI API](kapitola-01/README.md)
 * [Kapitola 2 - Pokročilejší volání OpenAI API (strukturované instrukce, teplota, n-shot learning)](kapitola-02/README.md)
+* [Kapitola 3 - Pokročilejší volání OpenAI API (strukturované výstupy)](kapitola-03/README.md)
