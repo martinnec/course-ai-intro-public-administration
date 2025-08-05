@@ -86,7 +86,7 @@ OPENAI_API_KEY=sk-...váš-klíč...
 
 ---
 
-## 6. Vytvoření jednoduché AI aplikace
+### 6. Vytvoření jednoduché AI aplikace
 
 Do souboru `main.py` vložte tento kód:
 
