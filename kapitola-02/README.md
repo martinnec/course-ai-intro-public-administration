@@ -249,13 +249,13 @@ response = client.responses.create(
 
             3. *Převezměte protokol o vloupání*: Od policie převezměte originál protokolu o vloupání do vašeho vozidla a o míře poškození.
             
-            3. *Ohlašte odcizení občanského průkazu, příp. dalších dokladů*: Ztrátu můžete nahlásit přímo policistovi, který na místo přijel. Případně můžete ztrátu nahlásti elektronicky vašemu obecnímu úřadu prostřednictvím datové schránky.
+            4. *Ohlašte odcizení občanského průkazu, příp. dalších dokladů*: Ztrátu můžete nahlásit přímo policistovi, který na místo přijel. Případně můžete ztrátu nahlásti elektronicky vašemu obecnímu úřadu prostřednictvím datové schránky.
             
-            4. *Požádejte o vydání nového občanského průkazu, příp. jiného odkladu*: Požádat o nový doklad můžete na jakémkoli obecním úřadě obce s rozšířenou působností, kde si ho posléze i vyzvednete.
+            5. *Požádejte o vydání nového občanského průkazu, příp. jiného odkladu*: Požádat o nový doklad můžete na jakémkoli obecním úřadě obce s rozšířenou působností, kde si ho posléze i vyzvednete.
 
-            5. *Nahlašte škodní událost*: Pokud máte automobil pojištěný, nahlaště na pojišťovnu škodní událost. Budete k tomu potřebovat protokol o vloupání do vozidla.
+            6. *Nahlašte škodní událost*: Pokud máte automobil pojištěný, nahlaště na pojišťovnu škodní událost. Budete k tomu potřebovat protokol o vloupání do vozidla.
 
-            6. *Nechte si opravit rozbité okno*: Navštivte co nejdříve libovolný autoservis, kde Vám opraví rozbité okno. V autoservisu vám mohou pomoci i nahlášením škodní události vaší pojišťovně (viz krok 5)."""
+            7. *Nechte si opravit rozbité okno*: Navštivte co nejdříve libovolný autoservis, kde Vám opraví rozbité okno. V autoservisu vám mohou pomoci i nahlášením škodní události vaší pojišťovně (viz krok 6)."""
         },{
             "role": "user",
             "content": "Bolí mě hlava a mám asi horečku. Co si na to mám vzít? Co mám dělat? A mohu jít do práce?"
