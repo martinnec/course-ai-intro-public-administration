@@ -6,7 +6,9 @@ Takové rozlišení umožňuje přesněji specifikovat kontext a očekávání, 
 Dalším způsobem, jak ovlivnit výstup modelu, na který se v této kapitole podíváme, je tzv. teplota.
 Teplotou určujeme míru kreativity, kterou od modelu při tvorbě odpovědi očekáváme.
 
-Posledním způsobem, jak ovlivnit výstup modelu, který zde probereme, je tzv. *one-shot*, *two-shot* nebo obecně *n-shot learning*, které umožňují "naučit" model specifičtějšímu chování pomocí příkladů.
+Předposledním způsobem, jak ovlivnit výstup modelu, který zde probereme, je tzv. *one-shot*, *two-shot* nebo obecně *n-shot learning*, které umožňují "naučit" model specifičtějšímu chování pomocí příkladů.
+
+Posledním způsobem, se kterým se seznámíme, je volba samotného modelu. Pokud využíváme OpenAI modely, máme několik možností, které se časem vyvíjejí.
 
 ## Postup
 
@@ -269,5 +271,35 @@ print(response.output_text)
 
 Můžete zkusit experimentovat s teplotou.
 Čím nižší teplotu nastavíte, tím více budete model nutit, aby jeho odpověď vypadala jako váš příklad.
+
+### 5. Volba modelu
+
+Chování také dokážeme ovlivnit tím, jaký model zvolíme.
+OpenAI nabízí několik modelů a nabídka se časem mění.
+Nemůžeme říci, že se rozšiřuje, protože starší modely přicházejí o podporu, cena jejich využití je nastavena na téměř nesmyslné hodnoty a nebo již prostě nejsou nabízeny.
+V době přípravy tohoto tutoriálu máme u OpenAI na výběr mezi několika kategoriemi modelů - reasoning modely, chatovací modely, real-time modely, modely na generování obrázků nebo mluveného slova, atd.
+
+V tomto tutoriálu používáme chatovací modely.
+V době připravy tutoriálu jsou nejaktuálnější modely `gpt-4o` a `gpt-4.1`.
+Model `gpt-4o` má ještě variantu `gpt-4o-mini`.
+Model `gpt-4.1` má varianty `gpt-4.1-mini` a `gpt-4.1-nano`.
+Tyto varianty jsou menší, úspornější, rychlejší a levnější.
+Na druhou stranu vykazují horší míru "inteligence".
+Model `gpt-4.1` a jeho varianty mají určitá specifika jako např. lépe následují zadané instrukce.
+Pro tvorbu aplikací, které využívají AI, jsou tak první volbou.
+Vždy je ale nutné v daném kontextu a pro dané potřeby experimentovat s více modely.
+
+Vyzkoušejte si, jak se odpovědi ve skriptu výše mění v souvislosti se zvoleným modelem.
+Předchozí odstavec uvádí přímo identifikátory modelů, které můžete přímo vložit do kódu jako hodnoty parametru `model`.
+
+Můžete také vyzkoušet tzv. reasoning modely, jako např. `o4-mini`, `o3` nebo `o3-mini`.
+Reasoning modely se od modelů zmíněných výše liší tím, že "přemýšlí".
+Slovo "přemýšlí" je ale příliš silné.
+V základu se jedná o to, že tyto modely jsou schopné si generovat za pochodu další instrukce a tím přemýšlení **simulovat**.
+To vede většinou k lepším výsledků, avšak za cenu delšího času potřebného k dosažení finální odpovědi a také k vyšším nákladům.
+
+Pozor na to, že u reasoning modelů nefunguje parametr `temperature`, tj. nenastavujeme u nich teplotu.
+Místo toho používáme parametr `reasoning={"effort": "HODNOTA"}`, kde `HODNOTA` může být nastavena na `low`, `medium`, `high`.
+Pomocí tohoto parametr nastavujeme jak moc chceme, aby model "přemýšlel".
 
 ---
