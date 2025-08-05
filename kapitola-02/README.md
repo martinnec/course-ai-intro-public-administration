@@ -144,7 +144,7 @@ print(response.output_text)
 Teplota je parametr, která určuje požadovanou míru kreativity modelu při tvorbě odpovědi.
 Kreativita je ale možná příliš silné slovo.
 Jedná se o míru náhodnosti při tvorbě odpovědi.
-Nízké hodnoty, jako např. 0.2, znamenají, že odpovědi budou více zacílené a deterministické, tedy že se odpovědi vytvořené v rámci opakovaných voláních budou lišit méně.
+Nízké hodnoty, jako např. 0.2, znamenají, že odpovědi budou více zacílené a deterministické, tedy že se odpovědi vytvořené v rámci opakovaných volání budou lišit méně.
 Hodnoty teploty mohou být mezi 0 a 2.
 Přednastavená (defaultní) hodnota je 1.
 Hodnoty vyšší než 1 nejsou pro použitelné aplikace doporučeny, náhodnost a riziko halucinací mohou být příliš vysoké.
@@ -190,13 +190,13 @@ print(response.output_text)
 ### 4. Příklady chování v instrukcích
 
 Velké jazykové modely vykazují vysokou míru flexibility tím, že jsou schopny reagovat na jakékoliv instrukce, i když je před tím nikdy v dané podobě neviděly.
-Jinými slovy, dokáží se dobře a smysluplně přizpůsobovat jakémukoliv textově vyjádřitelnému zadání (i zadání v podobě obrázku, audia apod, ale to je nad rámec tohoto vzdělávacího materiálu).
+Jinými slovy, dokáží se dobře a smysluplně přizpůsobovat jakémukoliv textově vyjádřitelnému zadání (i zadání v podobě obrázku, audia apod, ale to je nad rámec tohoto tutoriálu).
 
 Této schopnosti říkáme *context learning* a znamená, že na danou úlohu nemusíme model trénovat pomocí velkých trénovacích dat, ale stačí prostě úlohu dobře vysvětlit a zadat.
-Přesnější specifikace zadání ale může být obtížná v případě specifických požadavků.
+Přesnější specifikace zadání ale může být v případech specifických požadavků obtížná.
 Každý model vždy vykazuje určitou míru halucinací.
 
-Technikou pro přesnější specifikaci chování je tzv. *n-shot learning*, která spadá do kategorie *context learning* metod a je specifická tím,že chování popisujeme pomocí příkladů. Číslo *n* potom pouze značí, kolik příkladů použijeme.
+Technikou pro přesnější specifikaci chování je tzv. *n-shot learning*, která spadá do kategorie *context learning* metod a je specifická tím, že chování popisujeme pomocí příkladů. Číslo *n* potom pouze značí, kolik příkladů použijeme.
 Studie ukazují, že typicky stačí pouze několik málo příkladů (*n = 1..5*) k tomu, aby se model specifické chování "naučil".
 
 Je nutné si uvědomit, že ve skutečnosti se model nic "nenaučí", protože si ze zadání ani příkladů nic trvale nepamatuje.
@@ -300,6 +300,6 @@ To vede většinou k lepším výsledků, avšak za cenu delšího času potřeb
 
 Pozor na to, že u reasoning modelů nefunguje parametr `temperature`, tj. nenastavujeme u nich teplotu.
 Místo toho používáme parametr `reasoning={"effort": "HODNOTA"}`, kde `HODNOTA` může být nastavena na `low`, `medium`, `high`.
-Pomocí tohoto parametr nastavujeme jak moc chceme, aby model "přemýšlel".
+Pomocí tohoto parametr nastavujeme, jak moc chceme, aby model "přemýšlel".
 
 ---
