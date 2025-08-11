@@ -195,7 +195,7 @@ for krok in postup.kroky:
 
 ---
 
-## 7) Experimentujte a testujte odolnost
+## 7. Experimentujte a testujte odolnost
 
 Vyzkoušejte různé modely (`gpt-5`, `gpt-5-mini`) a parametry (`text.verbosity`, `reasoning.effort`). Sledujte:
 
