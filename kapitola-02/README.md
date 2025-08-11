@@ -9,7 +9,7 @@ V této kapitole se naučíte, jak dát modelu takové instrukce, aby:
 
 ---
 
-### 1. Když nestačí výchozí omezení modelu
+## 1. Když nestačí výchozí omezení modelu
 
 Modely od OpenAI už mají zabudovaná bezpečnostní pravidla — automaticky odmítají odpovědi na nebezpečné dotazy (např. použití zbraní, sebepoškozování).
 
@@ -45,7 +45,7 @@ print(response.output_text)
 
 ---
 
-### 2. Vlastní omezení podle potřeb aplikace
+## 2. Vlastní omezení podle potřeb aplikace
 
 V našem scénáři – průvodce životními situacemi občanů – **nechceme**, aby model poskytoval odborné rady z medicíny, stavebnictví apod.\
 Jenže model GPT-5 je „expert na všechno“ a rád poradí i tam, kde nechceme.
@@ -64,7 +64,7 @@ My ale chceme, aby uživatele pouze odkázal na lékaře a poté vysvětlil, jak
 
 ---
 
-### 3. Strukturované role v API
+## 3. Strukturované role v API
 
 Při volání API můžeme rozlišit **role zpráv**:
 
@@ -106,7 +106,7 @@ Model:
 
 ---
 
-### 4. Ověření priority instrukcí
+## 4. Ověření priority instrukcí
 
 Vyzkoušejme, že uživatel nemůže `developer` instrukce přebít:
 
