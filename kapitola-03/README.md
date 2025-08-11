@@ -1,4 +1,4 @@
-# Kurz AI pro veřejnou správu - Kapitola 3
+# Kurz AI pro veřejnou správu - Kapitola 3: Parametry volání API
 
 V této kapitole se naučíte, jak ovlivnit chování a styl odpovědí modelu nastavením vybraných parametrů při volání API:
 
