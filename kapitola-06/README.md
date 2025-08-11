@@ -4,7 +4,7 @@ V této kapitole si krok za krokem ukážeme, jak dodat modelu **konkrétní zna
 
 - kde vzít data a jak je připravit,
 - jak je bezpečně předat do promptu,
-- proč použít roli `` a jak přesně formulovat omezení,
+- proč použít roli `developer` a jak přesně formulovat omezení,
 - jak rozšířit návratovou strukturu o odkazy na použité služby
 
 ---
