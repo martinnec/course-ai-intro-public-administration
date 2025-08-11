@@ -14,8 +14,8 @@ client = OpenAI(api_key=api_key)
 
 # Zavoláme OpenAI model
 response = client.responses.create(
-    model="gpt-4o-mini",
-    input="Je mi špatně a nemůžu do práce. Co mám dělat?"
+    model="gpt-5-nano",
+    input="Jak si vyřídit nemocenskou?"
 )
 
 # Vypíšeme odpověď

@@ -1,346 +1,225 @@
 # Kurz AI pro veřejnou správu - Kapitola 3
 
-Ve třetí kapitole se naučíte, jak získat odpověď modelu ve strukturované podobě, se kterou můžeme dále algoritmicky pracovat v rámci naší aplikace nebo služby.
+V této kapitole se naučíte, jak ovlivnit chování a styl odpovědí modelu nastavením vybraných parametrů při volání API:
 
-## Postup
+1. Volba modelu
+2. Teplota (temperature)
+3. Upovídanost (verbosity)
+4. Hloubka přemýšlení (reasoning\_effort)
 
-### 1. Definice struktury
+---
 
-Dnešní velké jazykové modely předpokládají, že budou integrovány jako komponenty v rámci různých webových či jiných softwarových aplikací a služeb.
-Někdy je model pro uživatele viditelný formou např. chatu.
-Jindy je skrytý na pozadí, kdy aplikace nabízí běžné uživatelské rozhraní, do kterého jsou různé výstupy modelu integrovány.
-K tomu potřebujeme být schopni s výstupy modelu dále v našem programovém kódu pracovat a tedy potřebujeme, aby nám model vracel odpovědi ve strukturované podobě, která je dále zpracovatelná.
+## 1. Volba modelu
 
-Tato struktura není předdefinovaná tvůrci modelu.
-Programátor aplikace, který chce integrovat odpovědi jazykového modelu, si může tuto strukturu zadefinovat sám.
-Pokud programujeme v Pythonu, je dnes běžnou praxí definovat strukturu jako *Pydantic* třídy (datové struktury).
+Při návrhu aplikace využívající velký jazykový model máme na výběr mezi různými modely. Liší se:
 
-V našem případě chceme, aby model vracel návrh postupu řešení životní situace strukturovaný do dvou částí:
+- výrobcem,
+- zaměřením (text-to-text, text-to-image, speech-to-text…),
+- výkonem, rychlostí a cenou,
+- schopnostmi (např. podpora tzv. reasoning – „přemýšlení“).
 
-- Úvodní text k návrhu řešení dané životní situace
-- Uspořádaný seznam kroků, které je potřeba provést
+V našem kurzu se zaměříme na **text-to-text** modely od OpenAI. Použijeme tři varianty modelu GPT-5:
 
-Pro každý krok potom potřebujeme následující informace:
+- **gpt-5** – nejvýkonnější, ale také nejpomalejší a nejdražší.
+- **gpt-5-mini** – kompromis mezi výkonem a rychlostí.
+- **gpt-5-nano** – nejrychlejší a nejlevnější, ale s omezenou kvalitou.
 
-- Pořadí kroku v postupu
-- Název kroku, který stručně popisuje, co je potřeba udělat
-- Podrobný popis kroku, který uživateli vysvětluje, co má dělat
-
-To můžeme přepsat do následující definice datové struktury
+📝 **Úkol:** Spusťte stejný dotaz na všechny tři varianty, změřte dobu odezvy a porovnejte kvalitu odpovědí.
 
 ```python
-from pydantic import BaseModel, Field
-
-class KrokPostupu(BaseModel):
-    poradi: int = Field(description="Pořadí kroku v postupu")
-    nazev: str = Field(description="Název kroku, který stručně popisuje, co je potřeba udělat")
-    popis: str = Field(description="Podrobný popis kroku, který uživateli vysvětluje, co má dělat.")
-
-class Postup(BaseModel):
-    uvod: str = Field(description="Úvodní text k návrhu řešení dané životní situace")
-    kroky: list[KrokPostupu] = Field(description="Uspořádaný seznam kroků, které je potřeba provést")
-```
-
-Tuto definici můžeme přímo vložit do našeho skriptu `main.py`.
-
-V předchozích příkladech jsme model volali pomocí operace `create`.
-Ta je určena pro situace, kdy chceme, aby model odpověděl nestrukturovaným textem.
-
-Můžeme jej však instruovat, aby odpověď poskytl v podobě dat strukturovaných dle námi definované datové struktury.
-K tomu slouží operace `parse`.
-Její volání je podobné jako volání operace `create`.
-Pouze přidáme parametr `text_format`, do kterého předáme definici naší cílové datové struktury.
-
-Výsledek je potom uložen v odpovědi, jako hodnota `output_parsed`.
-Touto hodnotou je objekt, který je instancí třídy definující naší datovou strukturu.
-
-```python
+import time
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
-from pydantic import BaseModel, Field
 
-# Načteme API klíč ze souboru .env
+# Načtení API klíče
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
-
 if not api_key:
     raise ValueError("API klíč není nastaven v .env souboru.")
 
-# Inicializujeme OpenAI klienta
 client = OpenAI(api_key=api_key)
 
-class KrokPostupu(BaseModel):
-    poradi: int = Field(description="Pořadí kroku v postupu")
-    nazev: str = Field(description="Název kroku, který stručně popisuje, co je potřeba udělat")
-    popis: str = Field(description="Podrobný popis kroku, který uživateli vysvětluje, co má dělat")
-
-class Postup(BaseModel):
-    uvod: str = Field(description="Úvodní text k návrhu řešení dané životní situace")
-    kroky: list[KrokPostupu] = Field(description="Uspořádaný seznam kroků, které je potřeba provést")
-
-# Zavoláme OpenAI model
-response = client.responses.parse(
-    model="gpt-4.1-mini",
-    input=[
+prompt = [
         {
             "role": "developer",
-            "content": "Jsi odborník na pomoc uživateli při řešení jeho různých životních situací v občanském životě. Vždy poradíš, jak danou životní situaci vyřešit z úředního hlediska poskytnutím konkrétního postupu v podobě číslovaných kroků. Uživatel potřebuje srozumitelné ale krátké vysvětlení každého kroku jednoduchou češtinou."
+            "content": "Jsi odborník na pomoc uživateli při řešení jeho životní situace v občanském životě. Vždy poradíš, jak danou životní situaci vyřešit z úředního hlediska poskytnutím konkrétního úředního postupu v podobě číslovaných kroků. Poskytuj krátké a srozumitelné vysvětlení každého kroku. Používej jednoduchou češtinu."
         },{
             "role": "developer",
-            "content": "Nikdy nesmíš v žádném kroku posutpu poskytovat radu v oboru, kterého se dotaz uživatele týká, např. lékařské rady, stavební rady, atd. Uživateli pouze můžeš napsat, aby odborníka vyhledal a navštívil bez jakýchkoliv časových, situačních či jiných podmínek a doporučení."
+            "content": "Nikdy nesmíš v žádném kroku postupu poskytovat radu v oboru, kterého se dotaz uživatele týká (např. lékařské rady, stavební rady, atd.). Pouze můžeš uživateli doporučit, aby odborníka navštívil. Toto doporučení ale nesmíš podmiňovat žádnými časovými, situačními či jinými podmínkami."
         },{
             "role": "user",
-            "content": "Bolí mě hlava a mám asi horečku. Co si na to mám vzít? Co mám dělat? A mohu jít do práce?"
+            "content": (
+                "Bolí mě hlava a mám horečku. Co mám dělat a mohu jít do práce?"
+            )
         }
-    ],
-    temperature=0.1,
-    text_format=Postup
-)
+    ]
 
-# Vypíšeme odpověď
-print("AI odpověď:")
-print(response.output_parsed)
+models = ["gpt-5", "gpt-5-mini", "gpt-5-nano"]
+
+print("\n=== Výsledky ===")
+print(f"{'Model':<12} {'Čas (s)':<10} Odpověď")
+for model in models:
+    start = time.time()
+    response = client.responses.create(
+        model=model,
+        input=prompt)
+    duration = time.time() - start
+    print(f"{model:<12} {duration:<10.2f} {response.output_text.strip()}")
 ```
 
-### 2. Zpracování strukturovaného výstupu
 
-Jak vidíme vy výsledku spuštění předchozího skriptu, hodnota uložená v `response.output_parsed` je opravdu instancí naší třídy `Postup`.
-Můžeme s ní dále pracovat běžným způsobem v našem programovém kódu, např. ji vypsat v uživatelsky přívětivé podobě.
-Výhodou tohoto přístupu je, že nejsme závislí na tom, v jaké podobě nám model odpověď formátuje.
-Získáme strukturovaný výstup v podobě, kterou potřebujeme a kterou si v našem aplikačním kódu zpracujeme tak, jak potřebujeme.
+## 2. Teplota (temperature)
+
+Teplota určuje míru náhodnosti při generování odpovědi.
+
+- **Nízká hodnota (např. 0.2)** → odpovědi jsou konzistentnější a více deterministické.
+- **Vyšší hodnota (např. 0.8)** → odpovědi jsou různorodější, ale může stoupat riziko „halucinací“.
+- Rozsah hodnot: 0–2 (doporučeno 0–1).
+
+📝 **Úkol:** Změňte hodnotu `temperature` a pozorujte rozdíly ve výstupech.
 
 ```python
-from openai import OpenAI
-from dotenv import load_dotenv
-import os
-from pydantic import BaseModel, Field
-
-# Načteme API klíč ze souboru .env
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-
-if not api_key:
-    raise ValueError("API klíč není nastaven v .env souboru.")
-
-# Inicializujeme OpenAI klienta
-client = OpenAI(api_key=api_key)
-
-class KrokPostupu(BaseModel):
-    poradi: int = Field(description="Pořadí kroku v postupu")
-    nazev: str = Field(description="Název kroku, který stručně popisuje, co je potřeba udělat")
-    popis: str = Field(description="Podrobný popis kroku, který uživateli vysvětluje, co má dělat")
-
-class Postup(BaseModel):
-    uvod: str = Field(description="Úvodní text k návrhu řešení dané životní situace")
-    kroky: list[KrokPostupu] = Field(description="Uspořádaný seznam kroků, které je potřeba provést")
-
-# Zavoláme OpenAI model
-response = client.responses.parse(
-    model="gpt-4.1-mini",
-    input=[
-        {
-            "role": "developer",
-            "content": "Jsi odborník na pomoc uživateli při řešení jeho různých životních situací v občanském životě. Vždy poradíš, jak danou životní situaci vyřešit z úředního hlediska poskytnutím konkrétního postupu v podobě číslovaných kroků. Uživatel potřebuje srozumitelné ale krátké vysvětlení každého kroku jednoduchou češtinou."
-        },{
-            "role": "developer",
-            "content": "Nikdy nesmíš v žádném kroku posutpu poskytovat radu v oboru, kterého se dotaz uživatele týká, např. lékařské rady, stavební rady, atd. Uživateli pouze můžeš napsat, aby odborníka vyhledal a navštívil bez jakýchkoliv časových, situačních či jiných podmínek a doporučení."
-        },{
-            "role": "user",
-            "content": "Bolí mě hlava a mám asi horečku. Co si na to mám vzít? Co mám dělat? A mohu jít do práce?"
-        }
-    ],
-    temperature=0.1,
-    text_format=Postup
+response = client.responses.create(
+    model="gpt-5-mini",
+    input=prompt,
+    temperature=0.2
 )
 
-# Vypíšeme odpověď
 print("AI odpověď:")
-postup = response.output_parsed
-print(f"\n{postup.uvod}\n")
-for krok in postup.kroky:
-    print(f"{krok.poradi}. {krok.nazev}\n   {krok.popis}\n")
-```
-
-### 3. Detailnější pohled na strukturovaný výstup
-
-Definice datové struktury pomocí Pydantic tříd odpovídá definici pomocí JSON Schema.
-Na toto JSON Schema se můžeme podívat, jak ukazuje následující skript.
-
-```python
-from pydantic import BaseModel, Field
-import json
-
-class KrokPostupu(BaseModel):
-    poradi: int = Field(description="Pořadí kroku v postupu")
-    nazev: str = Field(description="Název kroku, který stručně popisuje, co je potřeba udělat")
-    popis: str = Field(description="Podrobný popis kroku, který uživateli vysvětluje, co má dělat")
-
-class Postup(BaseModel):
-    uvod: str = Field(description="Úvodní text k návrhu řešení dané životní situace")
-    kroky: list[KrokPostupu] = Field(description="Uspořádaný seznam kroků, které je potřeba provést")
-
-print("JSON schema:")
-print(json.dumps(Postup.model_json_schema(), indent=2, ensure_ascii=False))
-```
-
-Model ve skutečnosti vrací strukturovaný výstup v podobě JSON dokumentu, který je strukturován tak, jak definuje toto JSON Schema.
-Na tento JSON dokument se můžeme také podívat.
-
-```python
-from openai import OpenAI
-from dotenv import load_dotenv
-import os
-from pydantic import BaseModel, Field
-import json
-
-# Načteme API klíč ze souboru .env
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-
-if not api_key:
-    raise ValueError("API klíč není nastaven v .env souboru.")
-
-# Inicializujeme OpenAI klienta
-client = OpenAI(api_key=api_key)
-
-class KrokPostupu(BaseModel):
-    poradi: int = Field(description="Pořadí kroku v postupu")
-    nazev: str = Field(description="Název kroku, který stručně popisuje, co je potřeba udělat")
-    popis: str = Field(description="Podrobný popis kroku, který uživateli vysvětluje, co má dělat")
-
-class Postup(BaseModel):
-    uvod: str = Field(description="Úvodní text k návrhu řešení dané životní situace")
-    kroky: list[KrokPostupu] = Field(description="Uspořádaný seznam kroků, které je potřeba provést")
-
-print("JSON schema:")
-print(json.dumps(Postup.model_json_schema(), indent=2, ensure_ascii=False))
-
-# Zavoláme OpenAI model
-response = client.responses.parse(
-    model="gpt-4.1-mini",
-    input=[
-        {
-            "role": "developer",
-            "content": "Jsi odborník na pomoc uživateli při řešení jeho různých životních situací v občanském životě. Vždy poradíš, jak danou životní situaci vyřešit z úředního hlediska poskytnutím konkrétního postupu v podobě číslovaných kroků. Uživatel potřebuje srozumitelné ale krátké vysvětlení každého kroku jednoduchou češtinou."
-        },{
-            "role": "developer",
-            "content": "Nikdy nesmíš v žádném kroku posutpu poskytovat radu v oboru, kterého se dotaz uživatele týká, např. lékařské rady, stavební rady, atd. Uživateli pouze můžeš napsat, aby odborníka vyhledal a navštívil bez jakýchkoliv časových, situačních či jiných podmínek a doporučení."
-        },{
-            "role": "user",
-            "content": "Bolí mě hlava a mám asi horečku. Co si na to mám vzít? Co mám dělat? A mohu jít do práce?"
-        }
-    ],
-    temperature=0.1,
-    text_format=Postup
-)
-
-# Vypíšeme odpověď
-print("AI odpověď:")
-postup = response.output_parsed
-print(postup.model_dump_json(indent=2))
-```
-
-### 4. Příklady pro *one-shot learning* při strukturovaném výstupu
-
-Výše uvedený náhled na JSON podobu strukturovaného výstupu využijeme pro zápis příkladu pro *one-shot learning* techniku, kterou jsme si vysvětlovali v předchozí kapitole.
-
-Příklad, který vložíme do instrukcí, bude z věcného hlediska stejný.
-Pouze ho formátujeme v očekávané struktuře a zapíšeme jako JSON dokument.
-
-```python
-from openai import OpenAI
-from dotenv import load_dotenv
-import os
-from pydantic import BaseModel, Field
-import json
-
-# Načteme API klíč ze souboru .env
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-
-if not api_key:
-    raise ValueError("API klíč není nastaven v .env souboru.")
-
-# Inicializujeme OpenAI klienta
-client = OpenAI(api_key=api_key)
-
-class KrokPostupu(BaseModel):
-    poradi: int = Field(description="Pořadí kroku v postupu")
-    nazev: str = Field(description="Název kroku, který stručně popisuje, co je potřeba udělat")
-    popis: str = Field(description="Podrobný popis kroku, který uživateli vysvětluje, co má dělat")
-
-class Postup(BaseModel):
-    uvod: str = Field(description="Úvodní text k návrhu řešení dané životní situace")
-    kroky: list[KrokPostupu] = Field(description="Uspořádaný seznam kroků, které je potřeba provést")
-
-print("JSON schema:")
-print(json.dumps(Postup.model_json_schema(), indent=2, ensure_ascii=False))
-
-# Zavoláme OpenAI model
-response = client.responses.parse(
-    model="gpt-4.1-mini",
-    input=[
-        {
-            "role": "developer",
-            "content": "Jsi odborník na pomoc uživateli při řešení jeho různých životních situací v občanském životě. Vždy poradíš, jak danou životní situaci vyřešit z úředního hlediska poskytnutím konkrétního postupu v podobě číslovaných kroků. Uživatel potřebuje srozumitelné ale krátké vysvětlení každého kroku jednoduchou češtinou."
-        },{
-            "role": "developer",
-            "content": "Nikdy nesmíš v žádném kroku posutpu poskytovat radu v oboru, kterého se dotaz uživatele týká, např. lékařské rady, stavební rady, atd. Uživateli pouze můžeš napsat, aby odborníka vyhledal a navštívil bez jakýchkoliv časových, situačních či jiných podmínek a doporučení."
-        },{
-            "role": "user",
-            "content": "Někdo mi rozbil okno u auta, vloupal se dovnitř a ukradl mi peněženku. Jak si mám sám opravit okno? Potřebuju nějak řešit ztrátu peněženky?"
-        },{
-            "role": "assistant",
-            "content": """{
-                "uvod": "Omlouvám se, ale nemohu Vám poradit, jak si máte sám opravit rozbité okno u vašeho automobilu. Doporučuji se vám obrátit na nejbližší autoservis, kde vám rozbité okno odborně opraví.",
-                "kroky": [
-                    {
-                        "poradi": 1,
-                        "nazev": "Zavolejte policii",
-                        "popis": "Zavolejte na tísňovou linku 112 nebo 158 a oznamte vloupání do vašeho vozidla."
-                    },{
-                        "poradi": 2,
-                        "nazev": "Vyčkejte na příjezd policie",
-                        "popis": "Vyčkejte, než přijede policie a nahlašte jim, co přesně se z vašeho pohledu stalo. Odpovězte na všechny jejich otázky."
-                    },{
-                        "poradi": 3,
-                        "nazev": "Převezměte protokol o vloupání",
-                        "popis": "Od policie převezměte originál protokolu o vloupání do vašeho vozidla a o míře poškození."
-                    },{
-                        "poradi": 4,
-                        "nazev": "Ohlašte odcizení občanského průkazu, příp. dalších dokladů",
-                        "popis": "Ztrátu můžete nahlásit přímo policistovi, který na místo přijel. Případně můžete ztrátu nahlásti elektronicky vašemu obecnímu úřadu prostřednictvím datové schránky."
-                    },{
-                        "poradi": 5,
-                        "nazev": "Požádejte o vydání nového občanského průkazu, příp. jiného odkladu",
-                        "popis": "Požádat o nový doklad můžete na jakémkoli obecním úřadě obce s rozšířenou působností, kde si ho posléze i vyzvednete."
-                    },{
-                        "poradi": 6,
-                        "nazev": "Nahlašte škodní událost",
-                        "popis": "Pokud máte automobil pojištěný, nahlaště na pojišťovnu škodní událost. Budete k tomu potřebovat protokol o vloupání do vozidla."
-                    },{
-                        "poradi": 7,
-                        "nazev": "Nechte si opravit rozbité okno",
-                        "popis": "Navštivte co nejdříve libovolný autoservis, kde Vám opraví rozbité okno. V autoservisu vám mohou pomoci i nahlášením škodní události vaší pojišťovně (viz krok 5)."
-                    }
-                ]
-            }"""
-        },{
-            "role": "user",
-            "content": "Bolí mě hlava a mám asi horečku. Co si na to mám vzít? Co mám dělat? A mohu jít do práce?"
-        }
-    ],
-    temperature=0.1,
-    text_format=Postup
-)
-
-# Vypíšeme odpověď
-print("AI odpověď:")
-postup = response.output_parsed
-print(f"\n{postup.uvod}\n")
-for krok in postup.kroky:
-    print(f"{krok.poradi}. {krok.nazev}\n   {krok.popis}\n")
+print(response.output_text)
 ```
 
 ---
+
+## 3. Upovídanost (verbosity)
+
+Parametr `verbosity` určuje množství detailů ve výstupu. Hodnoty:
+
+- `low` – stručné odpovědi.
+- `medium` – vyvážená míra detailu.
+- `high` – velmi podrobné odpovědi.
+
+📝 **Úkol:** Vyzkoušejte různé úrovně upovídanosti pro model `gpt-5-mini`.
+
+```python
+for verbosity in ["low", "medium", "high"]:
+    print(f"\n--- Verbosity: {verbosity} ---")
+    response = client.responses.create(
+        model="gpt-5-mini",
+        input=prompt,
+        text={
+            "verbosity": verbosity
+        }
+    )
+    print(response.output_text)
+```
+
+📝 **Úkol:** Přidejte do výstupu informaci o počtu vstupních a výstupních tokenů.
+
+```python
+for verbosity in ["low", "medium", "high"]:
+    print(f"\n--- Verbosity: {verbosity} ---")
+    start = time.time()
+    response = client.responses.create(
+        model="gpt-5-mini",
+        input=prompt,
+        text={
+            "verbosity": verbosity
+        }
+    )
+    duration = time.time() - start
+    print(f"--- Duration: {duration:.2f} ---")
+    print(f"--- Input tokens: {response.usage.input_tokens} ---")
+    print(f"--- Output tokens: {response.usage.output_tokens} ---")
+    print(f"--- Total tokens: {response.usage.total_tokens} ---")
+    print(response.output_text)
+```
+
+---
+
+## 4. Hloubka přemýšlení (`reasoning_effort`)
+
+Parametr `reasoning_effort` určuje, kolik interního „uvažování“ (reasoning tokenů) model věnuje přípravě odpovědi:
+
+- `minimal` – nejrychlejší volba, model provádí jen základní interní zpracování, vhodné pro jednoduché úlohy (např. extrakce, formátování), kde je klíčová rychlost a nízká cena.
+- `low` – model věnuje mírnou míru analýzy; doporučeno pro běžné, relativně jednoduché případy.
+- `medium` – výchozí vyvážený přístup; model věnuje přiměřené úsilí analýze i koherence.
+- `high` – nejhlouběji přemýšlející přístup; model investuje více prostředků, výsledkem je typicky nejkvalitnější (a nejpomalejší) odpověď.
+
+Každá vyšší úroveň může zlepšit kvalitu odpovědí, ale také prodloužit dobu generování a zvýšit náklady.
+
+📝 **Úkol:** Porovnejte odpovědi pro různé úrovně `reasoning_effort` u modelu `gpt-5-mini`.
+
+```python
+for effort in ["minimal", "low", "medium", "high"]:
+    print(f"\n--- Reasoning effort: {effort} ---")
+    start = time.time()
+    response = client.responses.create(
+        model="gpt-5-mini",
+        input=prompt,
+        reasoning={
+            "effort": effort
+        }
+    )
+    duration = time.time() - start
+    print(f"--- Duration: {duration:.2f} ---")
+    print(f"--- Input tokens: {response.usage.input_tokens} ---")
+    print(f"--- Output tokens: {response.usage.output_tokens} ---")
+    print(f"--- Total tokens: {response.usage.total_tokens} ---")
+    print(response.output_text)
+```
+
+---
+
+## 5. Defaultní nastavení
+
+Vraťme se ještě k volání bez jakýchkoliv parametrů a prozkoumejme defaultní nastavení.
+
+📝 **Úkol:** Prozkoumejte výsledek zpracování modelem jeho detailním prozkoumáním a nejděte hodnoty defaultního nastavení.
+
+```python
+response = client.responses.create(
+    model="gpt-5-mini",
+    input=prompt
+)
+
+import json
+parsed = json.loads(response.model_dump_json())
+print(json.dumps(parsed, ensure_ascii=False, indent=2))
+```
+
+## 6. Kombinace parametrů
+
+V reálném kódu reálné aplikace či služby typicky voláme model s konkrétním nastavením parametrů.
+Ty můžeme kombinovat dle potřeby.
+
+📝 **Úkol:** Zavolejte model s konkrétním nastavením parametrů a prozkoumejte výsledek, abyste ověřili, že model s nastavením pracoval.
+
+```python
+response = client.responses.create(
+    model="gpt-5-mini",
+    input=prompt,
+    text={
+        "verbosity": "low"
+    },
+    reasoning={
+        "effort": "minimal"
+    }
+)
+
+import json
+parsed = json.loads(response.model_dump_json())
+print(json.dumps(parsed, ensure_ascii=False, indent=2))
+```
+
+---
+
+## Shrnutí
+
+- **Volba modelu** ovlivňuje kvalitu, rychlost i cenu.
+- **Teplota** mění míru náhodnosti výstupu.
+- **Upovídanost** řídí detailnost odpovědí.
+- **Hloubka přemýšlení** určuje, kolik interní analýzy model provede a jaké množství reasoning tokenů využije.
+
+Kombinací těchto parametrů můžete doladit chování modelu pro potřeby vaší aplikace.
