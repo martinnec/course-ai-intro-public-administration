@@ -203,13 +203,13 @@ Vyzkoušejte různé modely (`gpt-5`, `gpt-5-mini`) a parametry (`text.verbosity
 - jak podrobné odpovědi poskytuje,
 - zda správně uvádí `sluzba_id` a zda se shodují s přiloženými službami.
 
-> **Tip:** Při zjištění vybočení přidejte přísnější `developer` věty (např. „Každý krok MUSÍ vycházet z konkrétní položky v JSON a uvést `sluzba_id`. Pokud takovou službu nenalezneš, krok nevracej.“).
+> **Tip:** Při zjištění vybočení přidejte přísnější `developer` instrukce (např. „Každý krok MUSÍ vycházet z konkrétní položky v JSON a uvést `sluzba_id`. Pokud takovou službu nenalezneš, krok nevracej.“).
 
 ---
 
 ## Shrnutí
 
-- Externí data vložená do promptu tvoří **zdroj pravdy**; pomocí role `` zajistíte, že mají **vyšší prioritu** než přání uživatele.
+- Externí data vložená do promptu tvoří **zdroj pravdy**; pomocí role `developer` zajistíte, že mají **vyšší prioritu** než přání uživatele.
 - Popis **struktury JSON** přímo v instrukcích zvyšuje šanci, že model data správně přečte a použije.
 - Rozšířením výstupního schématu o `sluzba_id` lze každé doporučení **doložit** konkrétní službou (auditovatelnost).
 - Pravidelně testujte „vybočení“ a dolaďujte instrukce; u větších JSONů zvažte výběr/sumarizaci dat, abyste zůstali pod limitům tokenů.
