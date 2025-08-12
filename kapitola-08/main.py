@@ -1,21 +1,31 @@
+from government_services_store import GovernmentServicesStore
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
 from pydantic import BaseModel, Field
-import json
-from government_services_store import GovernmentServicesStore
 
 store = GovernmentServicesStore()
 store.load_services()
 
-# Načteme API klíč ze souboru .env
+stats = store.get_services_embedding_statistics()
+print(f"Načteno {stats['total_services']} služeb.")
+print(f"Embeddings v ChromaDB: {stats['total_embeddings']} (coverage: {stats['coverage_percentage']}%)")
+
+user_query = "Bolí mě hlava a mám asi horečku. Co si na to mám vzít? Co mám dělat? A mohu jít do práce?"
+#user_query = "Jsem OSVČ a jsem nemocný. Můžete mi pomoct?"
+#user_query = "Začal jsem stavět garáž na mém pozemku, ale soused mě vynadal, že stavím bez povolení. Nic takového jsem nevyřizoval, nevím zda je to potřeba. Co mám dělat?"
+#user_query = "Bojím se, že moje dítě není ještě připraveno na základní školu. Je nějaká možnost odkladu nebo přípravy?"
+#user_query = "Starám se sama o dvě malé děti. Vyhodili mě z nájmu v bytu a už nemám peníze ani na jídlo."
+results = store.search_services(user_query, k=10)
+for s in results:
+    print(f"{s.id}: {s.name}")
+
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
 if not api_key:
     raise ValueError("API klíč není nastaven v .env souboru.")
 
-# Inicializujeme OpenAI klienta
 client = OpenAI(api_key=api_key)
 
 class KrokPostupu(BaseModel):
@@ -28,14 +38,7 @@ class Postup(BaseModel):
     uvod: str = Field(description="Úvodní text k návrhu řešení dané životní situace")
     kroky: list[KrokPostupu] = Field(description="Uspořádaný seznam kroků, které je potřeba provést")
 
-user_query = "Bolí mě hlava a mám asi horečku. Co si na to mám vzít? Co mám dělat? A mohu jít do práce?"
-#user_query = "Jsem OSVČ a jsem nemocný. Jak získám neschopenku a nemocenskou?"
-#user_query = "Začal jsem stavět garáž na mém pozemku, ale soused mě vynadal, že stavím bez povolení. Nic takového jsem nevyřizoval, nevím zda je to potřeba. Co mám dělat?"
-#user_query = "Bojím se, že moje dítě není ještě připraveno na základní školu. Je nějaká možnost odkladu nebo přípravy?"
-
-results = store.search_services(user_query, k=10)
 if results:
-    # Construct XML for all services
     sluzby_xml = "<sluzby>\n"
     
     for service in results:
@@ -44,12 +47,10 @@ if results:
         sluzby_xml += f"    <nazev>{service.name}</nazev>\n"
         sluzby_xml += f"    <popis>{service.description}</popis>\n"
         
-        # Get additional details for this service
         detail = store.get_service_detail_by_id(service.id)
         if detail:
             sluzby_xml += f"    <detail>{detail}</detail>\n"
         
-        # Get steps for this service
         steps = store.get_service_steps_by_id(service.id)
         if steps:
             sluzby_xml += f"    <kroky>\n"
@@ -61,7 +62,6 @@ if results:
     
     sluzby_xml += "</sluzby>"
 
-    # Zavoláme OpenAI model
     response = client.responses.parse(
         model="gpt-5-mini",
         input=[
@@ -85,18 +85,15 @@ if results:
                 "content": user_query
             }
         ],
-        text={"verbosity": "medium"},     # volitelně: úroveň detailu odpovědi
-        reasoning={"effort": "minimal"},      # volitelně: hloubka uvažování
+        text={"verbosity": "medium"},
+        reasoning={"effort": "low"},
         text_format=Postup
     )
 
-    # Vypíšeme odpověď
     print("AI odpověď:")
     postup = response.output_parsed
     print(f"\n{postup.uvod}\n")
     for krok in postup.kroky:
         print(f"{krok.poradi}. {krok.nazev} ({krok.sluzba_id})\n   {krok.popis}\n")
-
 else:
-    print("Žádné služby nenalezeny.")
-
+    print("Žádné služby nenalezeny, asistent vám bohužel nemůže pomoci")
