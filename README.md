@@ -9,4 +9,4 @@ V tomto kurzu se naučíte, jak vytvářet jednoduché aplikace využívající 
 * [Kapitola 4: Context learning a n-shot learning](kapitola-04/README.md)
 * [Kapitola 5: Strukturované výstupy modelu](kapitola-05/README.md)
 * [Kapitola 6: Práce s externími znalostmi](kapitola-06/README.md)
-* [Kapitola 7: Od promptu k RAGu](kapitola-06/README.md)
+* [Kapitola 7: Od promptu k RAGu](kapitola-07/README.md)
