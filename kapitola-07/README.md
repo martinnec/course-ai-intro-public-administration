@@ -169,3 +169,8 @@ if results:
 - RAG nám umožňuje vybrat a vložit jen relevantní část dat.
 - V našem projektu to realizujeme pomocí `GovernmentServicesStore` a `ChromaDB`.
 - Před prvním použitím musíme znalostní bázi inicializovat bootstrap skriptem.
+
+Nevýhodou řešení v této kapitole je, že počítáme jeden embedding vektor pro poměrně dlouhý popis služby zkompilovaný z několika textových sekcí jejího popisu.
+V takovém vektoru se sémantika popisu již může ztrácet.
+Lepší by bylo počítat embedding vektor pro každou část popisu, případně každou sekvenci vět či větu.
+Princip ale zůstane stejný a pro jednoduchost tohoto materiálu jsme zůstali u jednoho embedding vektoru pro každou službu.
