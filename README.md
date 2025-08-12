@@ -10,3 +10,8 @@ V tomto kurzu se naučíte, jak vytvářet jednoduché aplikace využívající 
 * [Kapitola 5: Strukturované výstupy modelu](kapitola-05)
 * [Kapitola 6: Práce s externími znalostmi](kapitola-06)
 * [Kapitola 7: Od promptu k RAGu](kapitola-07)
+* [Kapitola 8: Použití RAG s lokální cache a XML serializací](kapitola-08)
+
+Co dále?
+* Dalším stupněm je vytvoření AI agenta, který bude s uživatelem komunikovat o jeho problému a světem služeb veřejné státy lépe provádět. To si ale necháme na nějaké příští kapitoly tohoto kurzu.
+* Zkuste si sami vylepšovat prompty, které jsme v kurzu používali. Můžete např. využít [Prompt Optimizer](https://platform.openai.com/chat/edit?models=gpt-5&optimize=true) od OpenAI: 
