@@ -1,4 +1,4 @@
-# Kurz AI pro veřejnou správu - Kapitola 8. Použití RAG s lokální cache a XML serializací
+# Kurz AI pro veřejnou správu - Kapitola 8: Použití RAG s lokální cache a XML serializací
 
 V této kapitole si ukážeme, jak využít vyhledávání služeb ve vytvořené vektorové databázi a získávání detailů o nalezených službách k vybudování plnohodnotného RAG řešení.
 
