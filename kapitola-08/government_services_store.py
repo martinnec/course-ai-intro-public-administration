@@ -330,7 +330,7 @@ class GovernmentServicesStore:
                 raw_id = item.get("id", "") or item.get("iri", "")
                 item_id = _extract_id_from_uri(raw_id) if raw_id else ""
                 if item_id == service_id:
-                    return f"Popis: {_safe_get_cs_from_item(item, 'popis')}\nKde a jak službu řešit elektronicky: {_safe_get_cs_from_item(item, 'kde-a-jak-službu-řešit-el')}\nKdy službu řešit: {_safe_get_cs_from_item(item, 'kdy-službu-řešit')}\nTýká se uživatele pokud: {_safe_get_cs_from_item(item, 'týká-se-vás-to-pokud')}\nZpůsob vyřízení: {_safe_get_cs_from_item(item, 'způsob-vyřízení-el')}"
+                    return f"<popis>{_safe_get_cs_from_item(item, 'popis')}</popis><benefit>{_safe_get_cs_from_item(item, 'jaký-má-služba-benefit')}</benefit>\n<jak-resit>{_safe_get_cs_from_item(item, 'kde-a-jak-službu-řešit-el')}</jak-resit>\n<kdy-resit>{_safe_get_cs_from_item(item, 'kdy-službu-řešit')}</kdy-resit>\n<resit-pokud>{_safe_get_cs_from_item(item, 'týká-se-vás-to-pokud')}</resit-pokud>\n<zpusob-vyrizeni>{_safe_get_cs_from_item(item, 'způsob-vyřízení-el')}</zpusob-vyrizeni>"
 
         return None
 

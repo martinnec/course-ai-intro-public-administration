@@ -82,6 +82,9 @@ class Postup(BaseModel):
 
 Oproti kapitole 6, kde jsme služby serializovali do **JSON** formátu, zde použijeme **XML**. To je plně podporované a některé studie naznačují, že pro LLM může být XML dokonce lepší — zejména proto, že má jasně vymezené značky a je pro model snadno parsovatelné.
 
+Nejprve si aktualizujte zdrojový kód `GovernmentServicesStore` na verzi pro kapitolu 8. Liší se v tom, že volání metoda `get_service_detail_by_id` nyní serializuje detail služby do XML místo do prostého textu.
+
+
 ```python
 if results:
     sluzby_xml = "<sluzby>\n"
@@ -114,7 +117,8 @@ else:
 
 ## 8.6 Použití XML kontextu v promptu
 
-XML můžeme vložit přímo do systémové nebo uživatelské zprávy pro LLM. Díky značkám `<service>`, `<id>`, `<name>` a `<description>` má model jasné oddělení jednotlivých částí.
+XML můžeme vložit přímo do systémové nebo uživatelské zprávy pro LLM. Díky značkám `<sluzba>`, `<id>`, `<nazev>` a `<popis>` má model jasné oddělení jednotlivých částí.
+Pozor na to, že oproti kapitole 7 jsme instrukce změnily, tak si je nezapomeňte aktualizovat dle kódu níže.
 
 ```python
 if results:
@@ -126,7 +130,10 @@ if results:
                 "content": "Jsi odborník na pomoc uživateli při řešení jeho různých životních situací v občanském životě. Vždy poradíš, jak danou životní situaci vyřešit z úředního hlediska poskytnutím konkrétního postupu v podobě číslovaných kroků. Uživatel potřebuje srozumitelné ale krátké vysvětlení každého kroku jednoduchou češtinou."
             },{
                 "role": "developer",
-                "content": "Odpovídej *VÝHRADNĚ* na základě přiloženého XML se seznamem služeb (viz <sluzby> dále). Každá služba je uvedena ve struktuře <id> (jednoznačný identifikátor služby), <nazev> (krátký název služby), <popis> (delší popis služby), <detail> (detailní popis služby) a <kroky> (úřední kroky, v rámci kterých je potřeba službu řešit). Kroky služeb nemusíš v popisu striktně dodržovat, ale zkombinuj je tak, aby dávaly v kontextu situace uživatele smysl."
+                "content": "Odpovídej *VÝHRADNĚ* na základě přiloženého XML se seznamem služeb (viz <sluzby> dále). Každá služba je uvedena ve struktuře: <id> (jednoznačný identifikátor služby), <nazev> (krátký název služby), <detail> (detailní informace o službě) a <kroky> (úřední kroky, v rámci kterých je potřeba službu řešit). <detail> se skládá z následujícíh částí: <popis> (Základní vymezení služby a upřesnění názvu, pokud není dost jednoznačný.), <benefit> (Atribut popisuje, jaký přínos má pro klienta využití služby.), <jak-resit> (Jakým způsobem se služba řeší elektronicky včetně případného ID datové schránky, mailové adresy či jiných digitálních kanálů.), <kdy-resit> (Popisuje, v jakou chvíli může nebo musí být iniciováno čerpání služby.), <resit-pokud> (Vymezení toho, kdo může službu využívat a za jakých podmínek se ho týká.), <zpusob-vyrizeni> (Co potřebuje klient, aby mohl službu řešit elektronicky (typicky doklady, žádosti apod.)"
+            },{
+                "role": "developer",
+                "content": "Kroky služeb nemusíš v popisu striktně dodržovat, ale zkombinuj je tak, aby dávaly v kontextu situace uživatele smysl."
             },{
                 "role": "developer",
                 "content": "*Nikdy nepoužívej žádné znalosti mimo ty uvedené v XML*. Vždy je ale tvým hlavním cílem postup v informacích o službách v přiloženém XML zjistit a uživateli vysvětlit. Může se ale stát, že XML neobsahuje informace o žádných relevantních službách. V takovém případě *NESMÍŠ* poskytnout žádné kroky, tj. seznam kroků bude prázdný, a v úvodu *MUSÍŠ* výslovně napsat, že nemáš potřebné informace a tedy neposkytuješ žádný návod ani postup."
