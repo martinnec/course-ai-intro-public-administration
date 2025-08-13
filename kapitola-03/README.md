@@ -3,9 +3,8 @@
 V této kapitole se naučíte, jak ovlivnit chování a styl odpovědí modelu nastavením vybraných parametrů při volání API:
 
 1. Volba modelu
-2. Teplota (temperature)
-3. Upovídanost (verbosity)
-4. Hloubka přemýšlení (reasoning\_effort)
+2. Upovídanost (verbosity)
+3. Hloubka přemýšlení (reasoning\_effort)
 
 ---
 
@@ -68,31 +67,9 @@ for model in models:
     print(f"{model:<12} {duration:<10.2f} {response.output_text.strip()}")
 ```
 
-
-## 2. Teplota (temperature)
-
-Teplota určuje míru náhodnosti při generování odpovědi.
-
-- **Nízká hodnota (např. 0.2)** → odpovědi jsou konzistentnější a více deterministické.
-- **Vyšší hodnota (např. 0.8)** → odpovědi jsou různorodější, ale může stoupat riziko „halucinací“.
-- Rozsah hodnot: 0–2 (doporučeno 0–1).
-
-📝 **Úkol:** Změňte hodnotu `temperature` a pozorujte rozdíly ve výstupech.
-
-```python
-response = client.responses.create(
-    model="gpt-5-mini",
-    input=prompt,
-    temperature=0.2
-)
-
-print("AI odpověď:")
-print(response.output_text)
-```
-
 ---
 
-## 3. Upovídanost (verbosity)
+## 2. Upovídanost (verbosity)
 
 Parametr `verbosity` určuje množství detailů ve výstupu. Hodnoty:
 
@@ -138,7 +115,7 @@ for verbosity in ["low", "medium", "high"]:
 
 ---
 
-## 4. Hloubka přemýšlení (`reasoning_effort`)
+## 3. Hloubka přemýšlení (`reasoning_effort`)
 
 Parametr `reasoning_effort` určuje, kolik interního „uvažování“ (reasoning tokenů) model věnuje přípravě odpovědi:
 
@@ -218,7 +195,6 @@ print(json.dumps(parsed, ensure_ascii=False, indent=2))
 ## Shrnutí
 
 - **Volba modelu** ovlivňuje kvalitu, rychlost i cenu.
-- **Teplota** mění míru náhodnosti výstupu.
 - **Upovídanost** řídí detailnost odpovědí.
 - **Hloubka přemýšlení** určuje, kolik interní analýzy model provede a jaké množství reasoning tokenů využije.
 
