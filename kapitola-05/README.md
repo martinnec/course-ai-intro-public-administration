@@ -36,7 +36,7 @@ class Postup(BaseModel):
 
 ## 3) Volání API s `parse` a `text_format`
 
-Místo `responses.create` použijeme `` a model požádáme, aby výsledek odevzdal **přímo v této struktuře**. `output_parsed` pak bude instance naší Pydantic třídy.
+Místo `responses.create` použijeme `responses.parse` a model požádáme, aby výsledek odevzdal **přímo v této struktuře**. `output_parsed` pak bude instance naší Pydantic třídy.
 
 ```python
 from openai import OpenAI
