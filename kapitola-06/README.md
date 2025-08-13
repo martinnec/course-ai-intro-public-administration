@@ -23,10 +23,12 @@ V předchozích kapitolách jsme model učili *jak* odpovídat (styl, formát, p
 
 ## 2. Získání a příprava dat
 
-1. Stáhněte JSON a vyfiltrujte služby relevantní k dané situaci.
+1. Vyberte služby relevantní k dané situaci.
 2. Pro každou službu vyberte relevantní informace.
 3. Udržujte konzistentní pole (např. `id`, `nazev`, `popis`, `benefit`, `jak-resit`, `kdy-resit`, `resit-pokud`).
 4. Uložte jako `data/sluzby_data.json`.
+
+V tomto kurzu již máte ukázkový JSON soubor připraven, stačí jej převzít do svého projektu.
 
 **Příklad struktury:**
 
@@ -43,8 +45,6 @@ V předchozích kapitolách jsme model učili *jak* odpovídat (styl, formát, p
   }
 ]
 ```
-
-> **Poznámka k velikosti:** Pokud je JSON dlouhý, zvažte výběr jen nejdůležitějších položek, případně před-sumarizaci. Důležité je zachovat **identifikátory služeb** (`id`), ke kterým budeme v odpovědi odkazovat.
 
 ## 3. Načtení dat v Pythonu
 
