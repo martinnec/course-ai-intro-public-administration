@@ -18,6 +18,7 @@ import os
 from pathlib import Path
 import openai
 import chromadb
+from dotenv import load_dotenv
 
 # Konfigurace důležitých voleb na jednom místě:
 # - EMBEDDINGS_MODEL: název embedding modelu pro výpočet vektorů
@@ -270,6 +271,7 @@ class GovernmentServicesStore:
 
     def _initialize_search(self) -> None:
         """Připraví OpenAI klienta a ChromaDB pro sémantické vyhledávání."""
+        load_dotenv()
         api_key = os.getenv('OPENAI_API_KEY')
         if not api_key:
             raise RuntimeError("Warning [_initialize_search]: OPENAI_API_KEY environment variable is not set")
