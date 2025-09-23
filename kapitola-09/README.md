@@ -1,3 +1,54 @@
+# Kapitola 9 – První AI agent
+
+V předchozí kapitole jsme si ukázali, že dokážeme zlepšit odpověď uživateli, pokud modelu dodáme správný znalostní kontext – konkrétně seznam služeb veřejné správy, které se vztahují k uživatelově životní situaci. To ale pořád znamenalo, že jsme uživatelský dotaz přímo použili k vyhledávání.
+
+Nyní uděláme krok dál. V této kapitole se seznámíme s pojmem **softwarový agent** a vyzkoušíme si postavit svého prvního jednoduchého agenta, který bude uživateli pomáhat komplexněji.
+
+---
+
+## Co je softwarový agent?
+
+Softwarový agent je program, který **vykonává komplexnější úkol autonomně** – podobně, jako by to udělal člověk. Agent:
+- dostane úkol (například „pomoz mi vyřešit mou životní situaci“),
+- rozdělí si ho na dílčí kroky,
+- využívá k tomu dostupné nástroje (např. vyhledávání služeb),
+- a nakonec uživateli předá výsledek.
+
+Agent tedy není jenom funkce, která vrátí výstup – je to koordinátor, který dokáže řídit jednotlivé části řešení a sám si rozhoduje, jaké akce provést.
+
+---
+
+## Co bude dělat náš agent?
+
+Agent v této kapitole bude mít za úkol uživateli pomoci se životní situací, podobně jako v kapitole 8. Tentokrát ale postupuje chytřeji:
+
+1. **Samostatně formuluje vhodné vyhledávací dotazy** – nevyhledáváme přímo textem od uživatele, ale agent si vygeneruje několik variant dotazů, které pokrývají různé aspekty situace.
+2. **Hledá služby** pomocí těchto dotazů.
+3. **Filtruje služby podle relevance** vůči životní situaci.
+4. **Generuje finální doporučený postup**, jak má uživatel situaci řešit.
+
+Pokud dokážeme tento postup popsat krok za krokem, můžeme ho naprogramovat. Každá část pak bude funkce, kterou agent zavolá.
+
+---
+
+## Jak bude vypadat program?
+
+Celý agent bude poskládaný z několika kroků:
+
+1. **Generování vyhledávacích dotazů** – modelu předáme uživatelův popis situace a on navrhne 5–7 krátkých dotazů.
+2. **Vyhledání služeb** – pro každý dotaz se vyhledají odpovídající služby z našeho úložiště.
+3. **Filtrování služeb** – model vyhodnotí, jestli je daná služba skutečně relevantní k situaci uživatele.
+4. **Vytvoření finálního postupu** – model zkombinuje dostupné služby a jejich kroky do přehledného návodu.
+
+---
+
+## Postupná stavba agenta
+
+Pojďme nyní jednotlivé části naprogramovat.
+
+Nejprve krátká příprava, potřebujeme importovat knihovny, zavést naše úložiště služeb pro vyhledávání z předchozích kapitol, nahrát služby a také OpenAI API klíč.
+
+```python
 from typing import List
 from government_services_store import GovernmentServicesStore
 from openai import OpenAI
@@ -11,36 +62,23 @@ store.load_services()
 stats = store.get_services_embedding_statistics()
 print(f"Načteno {stats['total_services']} služeb.")
 print(f"Embeddings v ChromaDB: {stats['total_embeddings']} (coverage: {stats['coverage_percentage']}%)")
+```
 
+Také znovu použijeme náš zásobník předpřipravených životních situací.
+
+```python
 #user_query = "Bolí mě hlava a mám asi horečku. Co mám dělat? A mohu jít do práce?"
 user_query = "Jsem OSVČ a jsem nemocný. Můžete mi pomoct?"
 #user_query = "Začal jsem stavět garáž na mém pozemku, ale soused mě vynadal, že stavím bez povolení. Nic takového jsem nevyřizoval, nevím zda je to potřeba. Co mám dělat?"
 #user_query = "Bojím se, že moje dítě není ještě připraveno na základní školu. Je nějaká možnost odkladu nebo přípravy?"
 #user_query = "Starám se sama o dvě malé děti. Vyhodili mě z nájmu v bytu a už nemám peníze ani na jídlo."
+```
 
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
+### 1. Generování vyhledávacích dotazů
 
-if not api_key:
-    raise ValueError("API klíč není nastaven v .env souboru.")
+Nejprve vytvoříme funkci, která z uživatelského dotazu připraví seznam dotazů pro vyhledávání služeb:
 
-client = OpenAI(api_key=api_key)
-
-# Definice datových struktur pro parsování odpovědí
-class KrokPostupu(BaseModel):
-    poradi: int = Field(description="Pořadí kroku v postupu")
-    nazev: str = Field(description="Název kroku, který stručně popisuje, co je potřeba udělat")
-    popis: str = Field(description="Podrobný popis kroku, který uživateli vysvětluje, co má dělat")
-    sluzba_id: str = Field(description="Odkaz na ID služby, ze které tento krok vyplývá")
-
-class Postup(BaseModel):
-    uvod: str = Field(description="Úvodní text k návrhu řešení dané životní situace")
-    kroky: list[KrokPostupu] = Field(description="Uspořádaný seznam kroků, které je potřeba provést")
-
-class NavrzenaVyhledavani(BaseModel):
-    dotazy: list[str] = Field(description="Seznam fulltextových dotazů pro vyhledání relevantních služeb")
-
-
+```python
 def generuj_navrhy_vyhledavacich_dotazu(user_query: str) -> List[str]:
 
     response = client.responses.parse(
@@ -64,7 +102,17 @@ def generuj_navrhy_vyhledavacich_dotazu(user_query: str) -> List[str]:
 
     navrzena_vyhledavani = response.output_parsed
     return navrzena_vyhledavani.dotazy
+```
 
+Tato funkce vrátí seznam krátkých dotazů v češtině, které agent dále použije.
+
+---
+
+### 2. Vyhledání služeb
+
+Každý z dotazů použijeme k vyhledání služeb v našem úložišti. Funkce vrátí slovník služeb:
+
+```python
 def vyhledej_sluzby(dotazy: List[str]) -> dict:  
     sluzby = {}
     for dotaz in dotazy:
@@ -72,7 +120,15 @@ def vyhledej_sluzby(dotazy: List[str]) -> dict:
         for sluzba in results:
             sluzby[sluzba.id] = sluzba
     return sluzby
+```
 
+---
+
+### 3. Filtrování služeb
+
+Aby se do výsledku nedostaly nesouvisející služby, agent každou posoudí jazykovým modelem. Pokud model odpoví `TRUE`, služba je považována za relevantní:
+
+```python
 def filtruj_relevantni_sluzby(sluzby: dict, user_query: str) -> dict:
     
     filtrovany_seznam_sluzeb = {}
@@ -118,8 +174,15 @@ def filtruj_relevantni_sluzby(sluzby: dict, user_query: str) -> dict:
                 filtrovany_seznam_sluzeb[sluzba.id] = sluzba
 
     return filtrovany_seznam_sluzeb
+```
 
+---
 
+### 4. Vygenerování finálního postupu
+
+Nakonec připravíme postup pro uživatele. Model dostane seznam relevantních služeb, jejich detaily a případné kroky a z nich sestaví přehledný návod:
+
+```python
 def vygeneruj_finalni_postup(sluzby: dict, user_query: str) -> Postup:
 
     sluzby_xml = "<sluzby>\n"
@@ -182,10 +245,19 @@ def vygeneruj_finalni_postup(sluzby: dict, user_query: str) -> Postup:
     )
 
     return response.output_parsed
+```
 
+Výstupem je struktura `Postup`, která obsahuje úvodní text a seznam kroků s odkazy na příslušné služby.
 
+---
+
+## Finální spuštění agenta
+
+Všechny funkce spojíme do hlavního běhu programu:
+
+```python
 def main():
-    navrh_dotazy = generuj_navrhy_vyhledavacich_dotazu(user_query)
+    navrh_dotazy = generuj_navrhy_vyhledavacich_dotazu()
     if navrh_dotazy is None:
         print("Nepodařilo se vygenerovat vyhledávací dotazy.")
         return
@@ -216,6 +288,21 @@ def main():
     if postup.kroky and len(postup.kroky) > 0:
         for krok in postup.kroky:
             print(f"{krok.poradi}. {krok.nazev} ({krok.sluzba_id})\n   {krok.popis}\n")
+```
 
-if __name__ == "__main__":
-    main()
+Po spuštění program načte popis životní situace od uživatele, agent ji zpracuje a uživateli vrátí srozumitelný postup.
+
+---
+
+## Shrnutí
+
+- Poznali jsme pojem **softwarový agent** - program, který autonomně řeší komplexní úkol.
+- Náš první agent pomáhá uživateli se životní situací tak, že:
+  1. generuje vyhledávací dotazy,
+  2. hledá služby,
+  3. filtruje je podle relevance,
+  4. a sestaví přehledný postup.
+- Každý krok jsme si naprogramovali jako samostatnou funkci a pak je spojili do jednoho celku.
+
+Tímto jsme položili základ pro další rozvoj – agent může být časem rozšířen o více nástrojů a větší míru autonomie.
+

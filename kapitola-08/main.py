@@ -11,11 +11,12 @@ stats = store.get_services_embedding_statistics()
 print(f"Načteno {stats['total_services']} služeb.")
 print(f"Embeddings v ChromaDB: {stats['total_embeddings']} (coverage: {stats['coverage_percentage']}%)")
 
-user_query = "Bolí mě hlava a mám asi horečku. Co si na to mám vzít? Co mám dělat? A mohu jít do práce?"
-#user_query = "Jsem OSVČ a jsem nemocný. Můžete mi pomoct?"
+#user_query = "Bolí mě hlava a mám asi horečku. Co si na to mám vzít? Co mám dělat? A mohu jít do práce?"
+user_query = "Jsem OSVČ a jsem nemocný. Můžete mi pomoct?"
 #user_query = "Začal jsem stavět garáž na mém pozemku, ale soused mě vynadal, že stavím bez povolení. Nic takového jsem nevyřizoval, nevím zda je to potřeba. Co mám dělat?"
 #user_query = "Bojím se, že moje dítě není ještě připraveno na základní školu. Je nějaká možnost odkladu nebo přípravy?"
 #user_query = "Starám se sama o dvě malé děti. Vyhodili mě z nájmu v bytu a už nemám peníze ani na jídlo."
+
 results = store.search_services(user_query, k=10)
 for s in results:
     print(f"{s.id}: {s.name}")

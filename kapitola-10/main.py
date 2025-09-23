@@ -12,12 +12,6 @@ stats = store.get_services_embedding_statistics()
 print(f"Načteno {stats['total_services']} služeb.")
 print(f"Embeddings v ChromaDB: {stats['total_embeddings']} (coverage: {stats['coverage_percentage']}%)")
 
-#user_query = "Bolí mě hlava a mám asi horečku. Co mám dělat? A mohu jít do práce?"
-user_query = "Jsem OSVČ a jsem nemocný. Můžete mi pomoct?"
-#user_query = "Začal jsem stavět garáž na mém pozemku, ale soused mě vynadal, že stavím bez povolení. Nic takového jsem nevyřizoval, nevím zda je to potřeba. Co mám dělat?"
-#user_query = "Bojím se, že moje dítě není ještě připraveno na základní školu. Je nějaká možnost odkladu nebo přípravy?"
-#user_query = "Starám se sama o dvě malé děti. Vyhodili mě z nájmu v bytu a už nemám peníze ani na jídlo."
-
 load_dotenv()
 api_key = os.getenv("OPENAI_API_KEY")
 
@@ -183,30 +177,168 @@ def vygeneruj_finalni_postup(sluzby: dict, user_query: str) -> Postup:
 
     return response.output_parsed
 
+def vysvetli_sluzby(sluzby: dict, user_query: str) -> Postup:
+
+    sluzby_xml = "<sluzby>\n"
+
+    for sluzba in sluzby.values():
+        sluzby_xml += f"  <sluzba>\n"
+        sluzby_xml += f"    <id>{sluzba.id}</id>\n"
+        sluzby_xml += f"    <nazev>{sluzba.name}</nazev>\n"
+        
+        detail = store.get_service_detail_by_id(sluzba.id)
+        if detail:
+            sluzby_xml += f"    <detail>{detail}</detail>\n"
+        
+        steps = store.get_service_steps_by_id(sluzba.id)
+        if steps:
+            sluzby_xml += f"    <kroky>\n"
+            for step in steps:
+                sluzby_xml += f"      <krok>{step}</krok>\n"
+            sluzby_xml += f"    </kroky>\n"
+        
+        sluzby_xml += f"  </sluzba>\n"
+    
+    sluzby_xml += "</sluzby>"
+
+    response = client.responses.create(
+        model="gpt-5-mini",
+        input=[
+            {
+                "role": "developer",
+                "content": "Jsi odborník na pomoc uživateli při řešení jeho různých životních situací v občanském životě. Uživatel popsal svoji situaci. Našel jsi několik služeb, které by mu mohly pomoci s vyřešením jeho situace. Shrň uživateli, jak by mu mohly tyto služby pomoci."
+            },{
+                "role": "developer",
+                "content": "Odpovídej *VÝHRADNĚ* na základě přiloženého XML se seznamem služeb (viz <sluzby> dále). Každá služba je uvedena ve struktuře: <id> (jednoznačný identifikátor služby), <nazev> (krátký název služby), <detail> (detailní informace o službě) a <kroky> (úřední kroky, v rámci kterých je potřeba službu řešit). <detail> se skládá z následujícíh částí: <popis> (Základní vymezení služby a upřesnění názvu, pokud není dost jednoznačný.), <benefit> (Atribut popisuje, jaký přínos má pro klienta využití služby.), <jak-resit> (Jakým způsobem se služba řeší elektronicky včetně případného ID datové schránky, mailové adresy či jiných digitálních kanálů.), <kdy-resit> (Popisuje, v jakou chvíli může nebo musí být iniciováno čerpání služby.), <resit-pokud> (Vymezení toho, kdo může službu využívat a za jakých podmínek se ho týká.), <zpusob-vyrizeni> (Co potřebuje klient, aby mohl službu řešit elektronicky (typicky doklady, žádosti apod.)"
+            },{
+                "role": "developer",
+                "content": "*Nikdy nesmíš ve shrnutí poskytovat radu ani informace v oboru, kterého se životní situace uživatele týká, např. lékařské rady, stavební rady, atd.* Uživateli pouze můžeš napsat, aby odborníka vyhledal a navštívil bez jakýchkoliv časových, situačních či jiných podmínek a doporučení."
+            },{
+                "role": "assistant",
+                "content": "Jaká je vaše životní situace?"
+            },{
+                "role": "user",
+                "content": user_query
+            },{
+                "role": "assistant",
+                "content": "Zde jsou služby, které by vám mohly pomoci:"
+            },{
+                "role": "assistant",
+                "content": sluzby_xml
+            },{
+                "role": "user",
+                "content": "Shrň mi, jak by mi tyto služby mohly pomoci vyřešit mou situaci."
+            }
+        ],
+        text={"verbosity": "medium"},
+        reasoning={"effort": "medium"}
+    )
+
+    return response.output_text
+
+def pomoz_zlepsit_dotaz(sluzby: dict, user_query: str) -> Postup:
+
+    sluzby_xml = "<sluzby>\n"
+
+    for sluzba in sluzby.values():
+        sluzby_xml += f"  <sluzba>\n"
+        sluzby_xml += f"    <id>{sluzba.id}</id>\n"
+        sluzby_xml += f"    <nazev>{sluzba.name}</nazev>\n"
+        
+        detail = store.get_service_detail_by_id(sluzba.id)
+        if detail:
+            sluzby_xml += f"    <detail>{detail}</detail>\n"
+        
+        steps = store.get_service_steps_by_id(sluzba.id)
+        if steps:
+            sluzby_xml += f"    <kroky>\n"
+            for step in steps:
+                sluzby_xml += f"      <krok>{step}</krok>\n"
+            sluzby_xml += f"    </kroky>\n"
+        
+        sluzby_xml += f"  </sluzba>\n"
+    
+    sluzby_xml += "</sluzby>"
+
+    response = client.responses.create(
+        model="gpt-5-mini",
+        input=[
+            {
+                "role": "developer",
+                "content": "Jsi odborník na pomoc uživateli při řešení jeho různých životních situací v občanském životě. Uživatel popsal svoji situaci. Bohužel se ti nepodařilo najít služby, se kterými by uživatel souhlasil, že mu pomohou situaci vyřešit. Pomoz mu popsat jeho situaci lépe, aby byla větší šance, že najdeme pro něj relevantní služby."
+            },{
+                "role": "developer",
+                "content": "Odpovídej *VÝHRADNĚ* na základě následujícího popisu životní situace od uživatele, na základě kterého jsme ale nenalezli vhodné služby a také na základě přiloženého XML se seznamem služeb, které jsme nalezli ale uživatel s nimi nebyl spokojený (viz <sluzby> dále, seznam může být i prázdný). Každá služba je uvedena ve struktuře: <id> (jednoznačný identifikátor služby), <nazev> (krátký název služby), <detail> (detailní informace o službě) a <kroky> (úřední kroky, v rámci kterých je potřeba službu řešit). <detail> se skládá z následujícíh částí: <popis> (Základní vymezení služby a upřesnění názvu, pokud není dost jednoznačný.), <benefit> (Atribut popisuje, jaký přínos má pro klienta využití služby.), <jak-resit> (Jakým způsobem se služba řeší elektronicky včetně případného ID datové schránky, mailové adresy či jiných digitálních kanálů.), <kdy-resit> (Popisuje, v jakou chvíli může nebo musí být iniciováno čerpání služby.), <resit-pokud> (Vymezení toho, kdo může službu využívat a za jakých podmínek se ho týká.), <zpusob-vyrizeni> (Co potřebuje klient, aby mohl službu řešit elektronicky (typicky doklady, žádosti apod.)"
+            },{
+                "role": "developer",
+                "content": "*Nikdy nesmíš uživatele navádět k vylepšení dotazu směrem do oboru, kterého se životní situace uživatele týká, např. popis zdravotního stavu, odborného stavu stavby, atd.* Uživateli můžeš doporučit, aby lépe popsal svoji situaci v tomto kontextu, ale ne konkrétními odbornými ukazateli."
+            },{
+                "role": "assistant",
+                "content": "Jaká je vaše životní situace?"
+            },{
+                "role": "user",
+                "content": user_query
+            },{
+                "role": "assistant",
+                "content": "Zde jsou služby, které by vám mohly pomoci:"
+            },{
+                "role": "assistant",
+                "content": sluzby_xml
+            },{
+                "role": "user",
+                "content": "Nejsem spokojen s navrženými službami. Pomoz mi lépe popsat mou situaci, abychom měli větší šanci najít relevantní služby."
+            }
+        ],
+        text={"verbosity": "medium"},
+        reasoning={"effort": "medium"}
+    )
+
+    return response.output_text
+
 
 def main():
-    navrh_dotazy = generuj_navrhy_vyhledavacich_dotazu(user_query)
-    if navrh_dotazy is None:
-        print("Nepodařilo se vygenerovat vyhledávací dotazy.")
-        return
 
-    print("Navržené dotazy pro vyhledání služeb:")
-    for dotaz in navrh_dotazy:
-        print(f"- {dotaz}")
+    #user_query = "Bolí mě hlava a mám asi horečku. Co mám dělat? A mohu jít do práce?"
+    user_query = "Jsem OSVČ a jsem nemocný. Můžete mi pomoct?"
+    #user_query = "Začal jsem stavět garáž na mém pozemku, ale soused mě vynadal, že stavím bez povolení. Nic takového jsem nevyřizoval, nevím zda je to potřeba. Co mám dělat?"
+    #user_query = "Bojím se, že moje dítě není ještě připraveno na základní školu. Je nějaká možnost odkladu nebo přípravy?"
+    #user_query = "Starám se sama o dvě malé děti. Vyhodili mě z nájmu v bytu a už nemám peníze ani na jídlo."
 
-    sluzby = vyhledej_sluzby(navrh_dotazy)
-    if not sluzby:
-        print("Nebyly nalezeny žádné služby.")
-        return
-    
-    print(f"Nalezeno služeb: {len(sluzby)}")
+    while True:
+        navrh_dotazy = generuj_navrhy_vyhledavacich_dotazu(user_query)
+        if navrh_dotazy is None:
+            print("Nepodařilo se vygenerovat vyhledávací dotazy.")
+            return
 
-    filtrovane_sluzby = filtruj_relevantni_sluzby(sluzby, user_query)
-    if not filtrovane_sluzby:
-        print("Nebyly nalezeny žádné relevantní služby.")
-        return
-    
-    print(f"Nalezeno relevantních služeb: {len(filtrovane_sluzby)}")
+        print("Navržené dotazy pro vyhledání služeb:")
+        for dotaz in navrh_dotazy:
+            print(f"- {dotaz}")
+
+        sluzby = vyhledej_sluzby(navrh_dotazy)
+        filtrovane_sluzby = {}
+        
+        if sluzby and len(sluzby) > 0:
+            
+            print(f"Nalezeno služeb: {len(sluzby)}")
+
+            filtrovane_sluzby = filtruj_relevantni_sluzby(sluzby, user_query)
+            
+            if len(filtrovane_sluzby) > 0:
+                
+                print(f"Nalezeno relevantních služeb: {len(filtrovane_sluzby)}")
+
+                vysvetleni = vysvetli_sluzby(filtrovane_sluzby, user_query)
+                print(vysvetleni)
+
+                user_decision = input("Chcete na základě těchto služeb vygenerovat konkrétní postup? Pokud ano, napište 'ano' a stiskněte Enter. Pokud ne, napište cokoliv jiného a stiskněte Enter.")
+                if user_decision.strip().lower() == 'ano':
+                    print("Generuji postup...")
+                    break
+        
+        pomoc_pro_zlepseni = pomoz_zlepsit_dotaz(filtrovane_sluzby, user_query)
+        print(pomoc_pro_zlepseni)
+
+        user_query = input("Zkuste nyní popsat svoji situaci lépe:")
 
     postup = vygeneruj_finalni_postup(filtrovane_sluzby, user_query)
     if not postup or not postup.uvod:
@@ -218,4 +350,8 @@ def main():
             print(f"{krok.poradi}. {krok.nazev} ({krok.sluzba_id})\n   {krok.popis}\n")
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    finally:
+        # Clean up resources to prevent threading errors on exit
+        store.close()
