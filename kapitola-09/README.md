@@ -283,7 +283,7 @@ Všechny funkce spojíme do hlavního běhu programu:
 
 ```python
 def main():
-    navrh_dotazy = generuj_navrhy_vyhledavacich_dotazu()
+    navrh_dotazy = generuj_navrhy_vyhledavacich_dotazu(user_query)
     if navrh_dotazy is None:
         print("Nepodařilo se vygenerovat vyhledávací dotazy.")
         return
