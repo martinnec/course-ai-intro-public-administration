@@ -142,7 +142,7 @@ tridici_agent = Agent(
     handoff_description="Třídicí agent, který může předat žádost občana příslušnému agentovi.",
     instructions=f"""{RECOMMENDED_PROMPT_PREFIX}
 Jste nápomocný agent pro třídění žádostí občanů týkajících se jejich životních situací.
-Žádosti občanů pouze předáváš příslušnému agentovi na základě obsahu žádostí.
+Nikdy žádost občana nevyřizuj ani neodpovídej. Pouze je předávej příslušnému agentovi na základě obsahu žádostí.
 Občan mluví česky, ty odpovídáš česky.
     """,
     handoffs=[
