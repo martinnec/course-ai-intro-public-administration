@@ -82,6 +82,24 @@ user_query = "Jsem OSVČ a jsem nemocný. Můžete mi pomoct?"
 #user_query = "Starám se sama o dvě malé děti. Vyhodili mě z nájmu v bytu a už nemám peníze ani na jídlo."
 ```
 
+Dále budeme pracovat s datovými strukturami, které si potřebujeme zadefinovat. Vysvětlíme si je později.
+
+```python
+# Definice datových struktur pro parsování odpovědí
+class KrokPostupu(BaseModel):
+    poradi: int = Field(description="Pořadí kroku v postupu")
+    nazev: str = Field(description="Název kroku, který stručně popisuje, co je potřeba udělat")
+    popis: str = Field(description="Podrobný popis kroku, který uživateli vysvětluje, co má dělat")
+    sluzba_id: str = Field(description="Odkaz na ID služby, ze které tento krok vyplývá")
+
+class Postup(BaseModel):
+    uvod: str = Field(description="Úvodní text k návrhu řešení dané životní situace")
+    kroky: list[KrokPostupu] = Field(description="Uspořádaný seznam kroků, které je potřeba provést")
+
+class NavrzenaVyhledavani(BaseModel):
+    dotazy: list[str] = Field(description="Seznam fulltextových dotazů pro vyhledání relevantních služeb")
+```
+
 ### 1. Generování vyhledávacích dotazů
 
 Nejprve vytvoříme funkci, která z uživatelského dotazu připraví seznam dotazů pro vyhledávání služeb:
