@@ -46,7 +46,7 @@ Celý agent bude poskládaný z několika kroků:
 
 Pojďme nyní jednotlivé části naprogramovat.
 
-Nejprve krátká příprava, potřebujeme importovat knihovny, zavést naše úložiště služeb pro vyhledávání z předchozích kapitol, nahrát služby a také OpenAI API klíč.
+Nejprve krátká příprava, potřebujeme importovat knihovny, zavést naše úložiště služeb pro vyhledávání z předchozích kapitol, nahrát služby a také OpenAI API klíč a zkontruovat OpenAI API klienta.
 
 ```python
 from typing import List
@@ -62,6 +62,14 @@ store.load_services()
 stats = store.get_services_embedding_statistics()
 print(f"Načteno {stats['total_services']} služeb.")
 print(f"Embeddings v ChromaDB: {stats['total_embeddings']} (coverage: {stats['coverage_percentage']}%)")
+
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
+
+if not api_key:
+    raise ValueError("API klíč není nastaven v .env souboru.")
+
+client = OpenAI(api_key=api_key)
 ```
 
 Také znovu použijeme náš zásobník předpřipravených životních situací.
