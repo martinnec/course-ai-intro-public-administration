@@ -314,6 +314,9 @@ def main():
     if postup.kroky and len(postup.kroky) > 0:
         for krok in postup.kroky:
             print(f"{krok.poradi}. {krok.nazev} ({krok.sluzba_id})\n   {krok.popis}\n")
+
+if __name__ == "__main__":
+    main()
 ```
 
 Po spuštění program načte popis životní situace od uživatele, agent ji zpracuje a uživateli vrátí srozumitelný postup.
