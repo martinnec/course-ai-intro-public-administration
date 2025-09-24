@@ -350,8 +350,4 @@ def main():
             print(f"{krok.poradi}. {krok.nazev} ({krok.sluzba_id})\n   {krok.popis}\n")
 
 if __name__ == "__main__":
-    try:
-        main()
-    finally:
-        # Clean up resources to prevent threading errors on exit
-        store.close()
+    main()

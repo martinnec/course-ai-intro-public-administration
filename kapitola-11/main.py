@@ -1,14 +1,16 @@
-from typing import List
 import asyncio
+from dotenv import load_dotenv
+import os
+from typing import List
 
-from agents import Agent, HandoffOutputItem, ItemHelpers, MessageOutputItem, ModelSettings, TResponseInputItem, ToolCallItem, ToolCallOutputItem, function_tool, Runner
-from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
+from agents import Runner, Agent, TResponseInputItem, WebSearchTool, function_tool, ModelSettings, MessageOutputItem, ToolCallItem, ToolCallOutputItem, ItemHelpers
 from openai.types.shared import Reasoning
+from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
 
 from government_services_store import GovernmentService, GovernmentServicesStore
 
-from dotenv import load_dotenv
-import os
+load_dotenv()
+api_key = os.getenv("OPENAI_API_KEY")
 
 store = GovernmentServicesStore()
 store.load_services()
@@ -16,12 +18,6 @@ store.load_services()
 stats = store.get_services_embedding_statistics()
 print(f"Načteno {stats['total_services']} služeb.")
 print(f"Embeddings v ChromaDB: {stats['total_embeddings']} (coverage: {stats['coverage_percentage']}%)")
-
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-
-if not api_key:
-    raise ValueError("API klíč není nastaven v .env souboru.")
 
 @function_tool
 def nastroj_pro_vyhledani_sluzeb(charakteristika_zivotni_situace: str, k: int) -> List[GovernmentService]:
@@ -103,11 +99,11 @@ Nikdy nenabízej kroky, které by přímo nevyplývaly z nalezených služeb."""
 )
 
 async def main():
-    historie_komunikace: list[TResponseInputItem] = []
+    historie_komunikace = []
 
     while True:
         vstup_uzivatele = input("[AGENTIC AI] *** S čím vám mohu pomoci?: ")
-        if vstup_uzivatele.lower() in {"exit", "quit", "konec", "bye", "end"}:
+        if vstup_uzivatele.lower() in {"exit", "quit", "konec"}:
             print("[AGENTIC AI] *** Ukončuji program. Nashledanou!")
             break
 
@@ -115,16 +111,13 @@ async def main():
 
         vystup_agenta = await Runner.run(agent, historie_komunikace)
 
-        for nova_polozka_konverzace in vystup_agenta.new_items:
-            if isinstance(nova_polozka_konverzace, MessageOutputItem):
-                print(f"[AGENTIC AI]: *** {ItemHelpers.text_message_output(nova_polozka_konverzace)}")
-            elif isinstance(nova_polozka_konverzace, ToolCallItem):
-                tool_name = getattr(nova_polozka_konverzace.raw_item, 'name', None) or getattr(nova_polozka_konverzace.raw_item, 'function', {}).get('name', 'unknown tool')
-                print(f"[AGENTIC AI]: Calling a tool {tool_name}")
-            elif isinstance(nova_polozka_konverzace, ToolCallOutputItem):
-                print(f"[AGENTIC AI]: Tool output received.")
-            else:
-                print(f"[AGENTIC AI]: Skipping item: {nova_polozka_konverzace.__class__.__name__}")
+        for polozka in vystup_agenta.new_items:
+            if isinstance(polozka, MessageOutputItem):
+                print("[AGENTIC AI]:", ItemHelpers.text_message_output(polozka))
+            elif isinstance(polozka, ToolCallItem):
+                print("[AGENTIC AI]: Volám nástroj.")
+            elif isinstance(polozka, ToolCallOutputItem):
+                print("[AGENTIC AI]: Výstup z nástroje.")
 
         historie_komunikace = vystup_agenta.to_input_list()
 

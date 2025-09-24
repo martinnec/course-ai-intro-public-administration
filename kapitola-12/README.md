@@ -1,74 +1,52 @@
-from typing import List
-import asyncio
+# Kapitola 12 – Multiagentní konverzační systém (předávání konverzace mezi rolemi)
 
-from agents import Agent, HandoffOutputItem, ItemHelpers, MessageOutputItem, TResponseInputItem, ToolCallItem, ToolCallOutputItem, WebSearchTool, function_tool, Runner
-from agents.extensions.handoff_prompt import RECOMMENDED_PROMPT_PREFIX
+V kapitole 11 jsme postavili **konverzačního agenta**, který sám řídí dialog a podle potřeby volá nástroje. U komplexnějších úloh ale jeden agent často naráží na limity: jeho instrukce jsou příliš obsáhlé, a tím méně srozumitelné a hůř udržitelné. Vhodnější je rozdělit práci na **více specializovaných agentů**, kteří si mezi sebou **předávají konverzaci (handoff)** podle toho, v jaké fázi řešení se právě nacházíme.
 
+Toto je cílem kapitoly 12: z jednoho „všeuměla“ uděláme **sadu vyhraněných rolí** a ukážeme si, jak je navzájem propojíme tak, aby společně vyřešily jednu ucelenou uživatelskou potřebu.
 
-from government_services_store import GovernmentService, GovernmentServicesStore
+---
 
-from dotenv import load_dotenv
-import os
+## Co si z kapitoly 11 bereme a co měníme
 
-store = GovernmentServicesStore()
-store.load_services()
+**Zachováváme:**
+- konverzační přístup (AI plánuje kroky sama),
+- nástroje pro práci se službami veřejné správy (vyhledání, detaily, kroky),
+- udržování **historie konverzace** a běh v asynchronní smyčce.
 
-stats = store.get_services_embedding_statistics()
-print(f"Načteno {stats['total_services']} služeb.")
-print(f"Embeddings v ChromaDB: {stats['total_embeddings']} (coverage: {stats['coverage_percentage']}%)")
+**Měníme / přidáváme:**
+- místo jednoho agenta definujeme **více agentů s úzkým zaměřením**,
+- přidáme **předávání (handoff)** mezi agenty,
+- **třídící agent** rozhoduje, ke komu se požadavek hodí,
+- nástroje přidělujeme **cíleně** jen těm rolím, které je skutečně potřebují.
 
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
+---
 
-if not api_key:
-    raise ValueError("API klíč není nastaven v .env souboru.")
+## Role v našem multiagentním systému
 
-@function_tool
-def nastroj_pro_vyhledani_sluzeb(popis_zivotni_situace: str, k: int) -> List[GovernmentService]:
-    """Vyhledá služby veřejné správy podle klíčových slov charakterizujících životní situaci uživatele.
-    Využívá vektorové vyhledávání v databázi textových popisů všech služeb.
-    Pro efektivní využití se doporučuje, aby popis životní situace obsahoval konkrétní klíčová slova.
-    Je ale lepší volit spíše obecnější slova charakterizující situaci, např. je lepší volit "údržba vozidla" místo "doplnění oleje ve vozidle".
+Navrhneme čtyři role:
 
-    Args:
-        popis_zivotni_situace (str): Popis životní situace uživatele.
-        k (int): Počet služeb k vrácení.
-    """
-    sluzby = store.search_services(popis_zivotni_situace, k=k)
-    print("[DEBUG] TOOL nastroj_pro_vyhledani_sluzeb: Nalezeny služby:", [sluzba.name for sluzba in sluzby])
-    return sluzby
+1) **Třídicí agent (router)** – analyzuje zprávu uživatele a přepíná konverzaci na další vhodnou roli.
+2) **Agent Vyhledávač** – navrhuje vyhledávací dotazy a **vyhledává služby**.
+3) **Agent Vysvětlovač** – podává **detailní vysvětlení** konkrétních služeb (k čemu jsou, kdy a jak se řeší…).
+4) **Agent Úředník** – z **kroků** vybraných služeb skládá **konkrétní postup** a **interaktivně** vede uživatele krok za krokem; v případě potřeby může použít i **webové vyhledávání** (např. formuláře, vzory).
 
-@function_tool
-def nastroj_pro_ziskani_detailu_sluzby(sluzba_id: str) -> str:
-    """Získá detailní informace o službě podle jejího ID.
-    
-    Args:
-        sluzba_id (str): ID služby.
-    """
-    sluzba_txt = store.get_service_detail_by_id(sluzba_id)
-    if not sluzba_txt:
-        print("[DEBUG] TOOL nastroj_pro_ziskani_detailu_sluzby: Žádná služba nenalezena pro ID:", sluzba_id)
-        return "Služba s tímto ID nebyla nalezena."
-    else:
-        print("[DEBUG] TOOL nastroj_pro_ziskani_detailu_sluzby: Nalezeny detaily služby pro ID:", sluzba_id)
-        return sluzba_txt
+Každý agent má vlastní stručné instrukce („co dělám a co nedělám“), jasný účel a **jen ty nástroje**, které ke své práci potřebuje.
 
-@function_tool
-def nastroj_pro_ziskani_kroku_sluzby(sluzba_id: str) -> str:
-    """Získá kroky potřebné k využití služby podle jejího ID.
-    
-    Args:
-        sluzba_id (str): ID služby.
-    """
-    kroky = store.get_service_steps_by_id(sluzba_id)
-    if not kroky:
-        print("[DEBUG] TOOL nastroj_pro_ziskani_kroku_sluzby: Žádné kroky nenalezeny pro ID:", sluzba_id)
-        return "Kroky pro tuto službu nebyly nalezeny."
-    else:
-        print("[DEBUG] TOOL nastroj_pro_ziskani_kroku_sluzby: Nalezeny kroky služby pro ID:", sluzba_id)
-        kroky_str = "\n".join([f"{i+1}. {krok}" for i, krok in enumerate(kroky)])
-        return kroky_str
+---
 
+## Krok za krokem z kapitoly 11
+
+### 1) Použijeme stejné nástroje
+
+Nástroje zůstávají podobné jako dříve.
+
+---
+
+### 2) Definujeme specializované agenty
+
+Každá role má stručné instrukce (cíle, omezení, jazyk) a jen relevantní nástroje:
+
+```python
 agent_vyhledavac = Agent(
     name="Agent Vyhledavac",
     handoff_description="Agent, který najde vhodné služby veřejné správy pro řešení dané životní situace občana.",
@@ -150,7 +128,15 @@ Použij následující postup:
     tools=[nastroj_pro_ziskani_kroku_sluzby, WebSearchTool(user_location={"type": "approximate", "country": "CZ"})],
     model="gpt-5-mini"
 )
+```
 
+---
+
+### 3) Třídicí agent a primární směrování
+
+Třídicí agent slouží jako „router“ – **neřeší obsah**, jen rozhoduje, komu dotaz předat. V konstruktoru mu rovnou předáme **seznam handoff cílů**:
+
+```python
 tridici_agent = Agent(
     name="Agent Tridic",
     handoff_description="Třídicí agent, který může předat žádost občana příslušnému agentovi.",
@@ -166,12 +152,30 @@ Občan mluví česky, ty odpovídáš česky.
     ],
     model="gpt-5-mini"
 )
+```
 
+---
+
+### 4) Doplňkové handoff vazby (zpět a mezi rolemi)
+
+Po úvodním směrování se může stát, že si role potřebují **předat uživatele zpět** (nebo mezi sebou). To zajistíme doplněním handoffů:
+
+```python
 agent_vyhledavac.handoffs.append(tridici_agent)
 agent_vysvetlovac.handoffs.append(tridici_agent)
 agent_vysvetlovac.handoffs.append(agent_urednik)
 agent_urednik.handoffs.append(tridici_agent)
+```
 
+Takové propojení umožní plynulý pohyb uživatele mezi rolemi podle aktuální potřeby.
+
+---
+
+### 5) Hlavní smyčka s podporou handoffů
+
+Smyčka zůstává asynchronní a udržuje **historii konverzace**. Nově však sledujeme i **právě aktivního agenta** a **předání** (handoff):
+
+```python
 async def main():
     aktualni_agent = tridici_agent
     historie_komunikace: list[TResponseInputItem] = []
@@ -205,8 +209,38 @@ async def main():
         historie_komunikace = vystup_aktualniho_agenta.to_input_list()
 
         aktualni_agent = vystup_aktualniho_agenta.last_agent
+```
 
-        
+Díky `last_agent` vždy víme, **která role bude pokračovat** v dalším kroku.
 
-if __name__ == "__main__":
-    asyncio.run(main())
+---
+
+## Jak to celé „teče“ (typický scénář)
+
+1. Uživatel popíše situaci → **Třídicí agent** rozpozná potřebu najít služby → handoff na **Vyhledávače**.
+2. **Vyhledávač** vygeneruje dotazy, zavolá vyhledávací nástroj, vrátí seznam relevantních služeb → zpět na **Třídicího**.
+3. Uživatel chce podrobnosti → handoff na **Vysvětlovače**.
+4. **Vysvětlovač** zavolá nástroj pro detaily, shrne, co která služba dělá.
+5. Uživatel chce „provest“ postupem → handoff na **Úředníka**.
+6. **Úředník** si vyžádá kroky a interaktivně provádí uživatele; v případě potřeby použije **WebSearchTool**.
+7. Po dokončení → zpět na **Třídicího** (nebo konec konverzace).
+
+---
+
+## Doporučení k návrhu multiagentních systémů
+
+- **Krátké a jasné instrukce** pro každou roli. Čím menší mentální prostor, tím spolehlivější chování.
+- **Nástroje přiřazujte cíleně.** Každý agent ať má jen to, co skutečně potřebuje.
+- **Handoff popisky** (handoff_description) pište tak, aby druhý agent přesně chápal, kdy a proč si ho má převzít.
+- **Logujte** (alespoň v dev režimu) handoffy a volání nástrojů – lépe se ladí toky.
+- **Paměť** (kontext) držte konzistentně napříč rolemi – viz `to_input_list()`.
+
+---
+
+## Shrnutí
+
+- Z jednoho univerzálního agenta jsme přešli na **systém specializovaných rolí**.
+- Konverzace se **předává (handoff)** mezi agenty tak, aby každý řešil jen svou část problému.
+- Díky cílenému přiřazení nástrojů, routerovi a udržované historii vzniká **škálovatelný a srozumitelný** systém, který je jednodušší rozšiřovat i udržovat.
+
+Tento multiagentní přístup je výhodný všude tam, kde chcete kombinovat **různé dovednosti**, udržet **instrukce stručné** a přitom nabídnout uživateli **plynulé konverzační rozhraní**.
